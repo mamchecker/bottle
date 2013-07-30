@@ -3051,7 +3051,9 @@ class BaseTemplate(object):
         self.name = name
         self.source = source.read() if hasattr(source, 'read') else source
         self.filename = source.filename if hasattr(source, 'filename') else None
-        self.lookup = [os.path.abspath(x) for x in lookup]
+        self.lookup = lookup
+        if not callable(lookup):
+            self.lookup = [os.path.abspath(x) for x in lookup]
         self.encoding = encoding
         self.settings = self.settings.copy() # Copy from class variable
         self.settings.update(settings) # Apply
@@ -3075,6 +3077,9 @@ class BaseTemplate(object):
             depr('Absolute template path names are deprecated.')
             return os.path.abspath(name)
 
+        if callable(lookup):
+            return lookup(name)
+        
         for spath in lookup:
             spath = os.path.abspath(spath) + os.sep
             fname = os.path.abspath(os.path.join(spath, name))
