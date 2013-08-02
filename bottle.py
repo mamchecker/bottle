@@ -3120,12 +3120,21 @@ class MakoTemplate(BaseTemplate):
         from mako.template import Template
         from mako.lookup import TemplateLookup
         options.update({'input_encoding':self.encoding})
-        options.setdefault('format_exceptions', bool(DEBUG))
-        lookup = TemplateLookup(directories=self.lookup, **options)
+        class _TemplateLookup(TemplateLookup):
+            def get_template(_self, uri):
+                return get_tpl(uri,
+                               template_adapter=self.__class__, 
+                               template_lookup=self.lookup).tpl
+
         if self.source:
-            self.tpl = Template(self.source, lookup=lookup, **options)
+            self.tpl = Template(self.source, 
+                                lookup=_TemplateLookup(), 
+                                **options)
         else:
-            self.tpl = Template(uri=self.name, filename=self.filename, lookup=lookup, **options)
+            self.tpl = Template(uri=self.name, 
+                                filename=self.filename, 
+                                lookup=_TemplateLookup(), 
+                                **options)
 
     def render(self, *args, **kwargs):
         for dictarg in args: kwargs.update(dictarg)
@@ -3184,7 +3193,6 @@ class Jinja2Template(BaseTemplate):
 class SimpleTemplate(BaseTemplate):
 
     def prepare(self, escape_func=html_escape, noescape=False, syntax=None, **ka):
-        self.cache = {}
         enc = self.encoding
         self._str = lambda x: touni(x, enc)
         self._escape = lambda x: escape_func(touni(x, enc))
@@ -3215,9 +3223,8 @@ class SimpleTemplate(BaseTemplate):
     def _include(self, _env, _name, **kwargs):
         env = _env.copy()
         env.update(kwargs)
-        if _name not in self.cache:
-            self.cache[_name] = self.__class__(name=_name, lookup=self.lookup)
-        return self.cache[_name].execute(env['_stdout'], env)
+        tpl = get_tpl(_name,template_adapter=self.__class__,template_lookup=self.lookup)
+        return tpl.execute(env['_stdout'], env)
 
     def execute(self, _stdout, kwargs):
         env = self.defaults.copy()
@@ -3402,8 +3409,7 @@ class StplParser(object):
                 return line, comment.replace('coding','coding*')
         return line, comment
 
-
-def template(*args, **kwargs):
+def get_tpl(*args, **kwargs):
     '''
     Get a rendered template as a string iterator.
     You can use a name, a filename or a template string as first parameter.
@@ -3422,11 +3428,18 @@ def template(*args, **kwargs):
         elif "\n" in tpl or "{" in tpl or "%" in tpl or '$' in tpl:
             TEMPLATES[tplid] = adapter(source=tpl, lookup=lookup, **settings)
         else:
-            TEMPLATES[tplid] = adapter(name=tpl, lookup=lookup, **settings)
+            try:
+                TEMPLATES[tplid] = adapter(name=tpl, lookup=lookup, **settings)
+            except TemplateError:
+                if DEBUG: pass
+                else: raise
     if not TEMPLATES[tplid]:
         abort(500, 'Template (%s) not found' % tpl)
+    return TEMPLATES[tplid]
+
+def template(*args, **kwargs):
     for dictarg in args[1:]: kwargs.update(dictarg)
-    return TEMPLATES[tplid].render(kwargs)
+    return get_tpl(*args, **kwargs).render(**kwargs)
 
 mako_template = functools.partial(template, template_adapter=MakoTemplate)
 cheetah_template = functools.partial(template, template_adapter=CheetahTemplate)
