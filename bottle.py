@@ -3134,8 +3134,9 @@ class BaseTemplate(object):
         self.source = source.read() if hasattr(source, 'read') else source
         self.filename = source.filename if hasattr(source, 'filename') else None
         self.lookup = lookup
-        if not callable(self.lookup):
+        try:#if not callable
             self.lookup = [os.path.abspath(x) for x in lookup]
+        except: pass
         self.encoding = encoding
         self.settings = self.settings.copy() # Copy from class variable
         self.settings.update(settings) # Apply
