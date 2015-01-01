@@ -278,20 +278,6 @@ class TestSTPLDir(unittest.TestCase):
             self.fail('Syntax error in template:\n%s\n\nTemplate code:\n##########\n%s\n##########' %
                      (traceback.format_exc(), tpl.code))
 
-    def test_old_include(self):
-        t1 = SimpleTemplate('%include foo')
-        TEMPLATES[(id(t1.lookup),'foo')] = SimpleTemplate('foo')
-        self.assertEqual(t1.render(), 'foo')
-
-    def test_old_include_with_args(self):
-        t1 = SimpleTemplate('%include foo x=y')
-        TEMPLATES[(id(t1.lookup),'foo')] = SimpleTemplate('foo{{x}}')
-        self.assertEqual(t1.render(y='bar'), 'foobar')
-
-    def test_defect_coding(self):
-        t1 = SimpleTemplate('%#coding comment\nfoo{{y}}')
-        self.assertEqual(t1.render(y='bar'), 'foobar')
-
     def test_multiline_block(self):
         source = '''
             <% a = 5
