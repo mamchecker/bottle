@@ -3535,25 +3535,9 @@ class StplParser(object):
         code += line.lstrip() + comment + '\n'
         self.code_buffer.append(code)
 
-    def fix_brackward_compatibility(self, line, comment):
-        parts = line.strip().split(None, 2)
-        if parts and parts[0] in ('include', 'rebase'):
-            depr('The include and rebase keywords are functions now.')
-            if len(parts) == 1:   return "_printlist([body])", comment
-            elif len(parts) == 2: return "_=%s(%r)" % tuple(parts), comment
-            else:                 return "_=%s(%r, %s)" % tuple(parts), comment
-        if self.lineno <= 2 and not line.strip() and 'coding' in comment:
-            m = re.match(r"#.*coding[:=]\s*([-\w.]+)", comment)
-            if m:
-                depr('PEP263 encoding strings in templates are deprecated.')
-                enc = m.group(1)
-                self.source = self.source.encode(self.encoding).decode(enc)
-                self.encoding = enc
-                return line, comment.replace('coding','coding*')
-        return line, comment
 
 def get_tpl(*args, **kwargs):
-    '''
+    """
     Get a rendered template as a string iterator.
     You can use a name, a filename or a template string as first parameter.
     Template rendering arguments can be passed as dictionaries

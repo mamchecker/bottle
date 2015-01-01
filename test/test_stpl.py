@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
-from bottle import SimpleTemplate, TemplateError, view, template, touni, tob, TEMPLATES, BaseTemplate
+from bottle import SimpleTemplate, TemplateError, view, template, touni, tob, html_quote, BaseTemplate
 import re
 import traceback
 import os.path
